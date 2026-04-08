@@ -13,6 +13,8 @@ import NewsPage from "./pages/NewsPage";
 import SubmitToolPage from "./pages/SubmitToolPage";
 import AboutPage from "./pages/AboutPage";
 import ContactPage from "./pages/ContactPage";
+import AdminPage from "./pages/AdminPage";
+import SearchResultsPage from "./pages/SearchResultsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +36,8 @@ const App = () => (
               <Route path="/submit" element={<SubmitToolPage />} />
               <Route path="/about" element={<AboutPage />} />
               <Route path="/contact" element={<ContactPage />} />
+              <Route path="/admin" element={<AdminPage />} />
+              <Route path="/search" element={<SearchResultsPage />} />
               <Route path="/:slug" element={<CategoryPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
