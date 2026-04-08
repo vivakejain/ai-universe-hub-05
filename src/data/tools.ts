@@ -10,6 +10,7 @@ export interface Tool {
   rating: number;
   url: string;
   logoEmoji: string;
+  logoDomain?: string;
   featured?: boolean;
   recent?: boolean;
 }

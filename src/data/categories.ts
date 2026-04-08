@@ -148,20 +148,27 @@ export const categories: Category[] = [
     slug: "community-submissions",
     description: "Tools submitted by the community, reviewed and approved.",
     icon: Send,
-    subcategories: [],
+    subcategories: [
+      { name: "Pending Submissions", slug: "pending-submissions" },
+      { name: "Approved Tools", slug: "approved-tools" },
+    ],
   },
   {
     name: "AI Glossary",
     slug: "ai-glossary",
     description: "AI terms explained in simple, beginner-friendly language.",
     icon: FileText,
-    subcategories: [],
+    subcategories: [
+      { name: "All Terms", slug: "all-terms" },
+    ],
   },
   {
     name: "AI News",
     slug: "ai-news",
     description: "Latest AI updates, launches, and industry news.",
     icon: Newspaper,
-    subcategories: [],
+    subcategories: [
+      { name: "Latest Updates", slug: "latest-updates" },
+    ],
   },
 ];
