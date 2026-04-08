@@ -28,6 +28,7 @@ export const tools: Tool[] = [
     rating: 4.8,
     url: "https://chat.openai.com",
     logoEmoji: "🤖",
+    logoDomain: "openai.com",
     featured: true,
   },
   {
@@ -42,6 +43,7 @@ export const tools: Tool[] = [
     rating: 4.7,
     url: "https://midjourney.com",
     logoEmoji: "🎨",
+    logoDomain: "midjourney.com",
     featured: true,
   },
   {
@@ -56,6 +58,7 @@ export const tools: Tool[] = [
     rating: 4.6,
     url: "https://github.com/features/copilot",
     logoEmoji: "💻",
+    logoDomain: "github.com",
     featured: true,
   },
   {
@@ -70,6 +73,7 @@ export const tools: Tool[] = [
     rating: 4.5,
     url: "https://jasper.ai",
     logoEmoji: "✍️",
+    logoDomain: "jasper.ai",
     featured: true,
   },
   {
@@ -84,6 +88,7 @@ export const tools: Tool[] = [
     rating: 4.4,
     url: "https://notion.so",
     logoEmoji: "📝",
+    logoDomain: "notion.so",
     featured: true,
   },
   {
@@ -98,6 +103,7 @@ export const tools: Tool[] = [
     rating: 4.5,
     url: "https://runwayml.com",
     logoEmoji: "🎬",
+    logoDomain: "runwayml.com",
     featured: true,
   },
   {
@@ -112,6 +118,7 @@ export const tools: Tool[] = [
     rating: 4.3,
     url: "https://zapier.com",
     logoEmoji: "⚡",
+    logoDomain: "zapier.com",
     recent: true,
   },
   {
@@ -126,6 +133,7 @@ export const tools: Tool[] = [
     rating: 4.4,
     url: "https://surferseo.com",
     logoEmoji: "🏄",
+    logoDomain: "surferseo.com",
     recent: true,
   },
   {
@@ -140,6 +148,7 @@ export const tools: Tool[] = [
     rating: 4.6,
     url: "https://elevenlabs.io",
     logoEmoji: "🎙️",
+    logoDomain: "elevenlabs.io",
     recent: true,
   },
   {
@@ -154,6 +163,7 @@ export const tools: Tool[] = [
     rating: 4.7,
     url: "https://cursor.sh",
     logoEmoji: "🖱️",
+    logoDomain: "cursor.sh",
     recent: true,
   },
   {
@@ -168,6 +178,7 @@ export const tools: Tool[] = [
     rating: 4.5,
     url: "https://canva.com",
     logoEmoji: "🎯",
+    logoDomain: "canva.com",
     recent: true,
   },
   {
@@ -182,6 +193,7 @@ export const tools: Tool[] = [
     rating: 4.3,
     url: "https://suno.ai",
     logoEmoji: "🎵",
+    logoDomain: "suno.ai",
     recent: true,
   },
 ];
