@@ -14,7 +14,102 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      people: {
+        Row: {
+          created_at: string
+          description: string | null
+          follower_count: string | null
+          id: string
+          is_approved: boolean
+          name: string
+          platform: string | null
+          profile_url: string | null
+          role: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          follower_count?: string | null
+          id?: string
+          is_approved?: boolean
+          name: string
+          platform?: string | null
+          profile_url?: string | null
+          role: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          follower_count?: string | null
+          id?: string
+          is_approved?: boolean
+          name?: string
+          platform?: string | null
+          profile_url?: string | null
+          role?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tools: {
+        Row: {
+          best_for: string | null
+          category: string
+          created_at: string
+          description: string
+          domain: string | null
+          featured: boolean
+          id: string
+          is_approved: boolean
+          is_community_submitted: boolean
+          name: string
+          pricing: string | null
+          rating: number | null
+          subcategory: string | null
+          submitter_email: string | null
+          summary: string | null
+          updated_at: string
+        }
+        Insert: {
+          best_for?: string | null
+          category: string
+          created_at?: string
+          description: string
+          domain?: string | null
+          featured?: boolean
+          id?: string
+          is_approved?: boolean
+          is_community_submitted?: boolean
+          name: string
+          pricing?: string | null
+          rating?: number | null
+          subcategory?: string | null
+          submitter_email?: string | null
+          summary?: string | null
+          updated_at?: string
+        }
+        Update: {
+          best_for?: string | null
+          category?: string
+          created_at?: string
+          description?: string
+          domain?: string | null
+          featured?: boolean
+          id?: string
+          is_approved?: boolean
+          is_community_submitted?: boolean
+          name?: string
+          pricing?: string | null
+          rating?: number | null
+          subcategory?: string | null
+          submitter_email?: string | null
+          summary?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
