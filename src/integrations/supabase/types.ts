@@ -14,6 +14,72 @@ export type Database = {
   }
   public: {
     Tables: {
+      glossary: {
+        Row: {
+          category: string
+          created_at: string
+          definition: string
+          examples: string | null
+          id: string
+          is_approved: boolean
+          long_explanation: string | null
+          related_terms: string[] | null
+          term: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          definition: string
+          examples?: string | null
+          id?: string
+          is_approved?: boolean
+          long_explanation?: string | null
+          related_terms?: string[] | null
+          term: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          definition?: string
+          examples?: string | null
+          id?: string
+          is_approved?: boolean
+          long_explanation?: string | null
+          related_terms?: string[] | null
+          term?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      glossary_suggestions: {
+        Row: {
+          created_at: string
+          definition: string
+          id: string
+          status: string
+          submitter_email: string | null
+          term: string
+        }
+        Insert: {
+          created_at?: string
+          definition: string
+          id?: string
+          status?: string
+          submitter_email?: string | null
+          term: string
+        }
+        Update: {
+          created_at?: string
+          definition?: string
+          id?: string
+          status?: string
+          submitter_email?: string | null
+          term?: string
+        }
+        Relationships: []
+      }
       people: {
         Row: {
           created_at: string
