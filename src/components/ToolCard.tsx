@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Star, ExternalLink } from "lucide-react";
 import type { Tool } from "@/data/tools";
 
@@ -7,11 +8,30 @@ const pricingColors: Record<string, string> = {
   Paid: "bg-amber-100 text-amber-700",
 };
 
+const ToolLogo = ({ tool }: { tool: Tool }) => {
+  const [failed, setFailed] = useState(false);
+  if (!tool.logoDomain || failed) {
+    return (
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground font-heading font-bold text-lg">
+        {tool.name.charAt(0)}
+      </div>
+    );
+  }
+  return (
+    <img
+      src={`https://logo.clearbit.com/${tool.logoDomain}`}
+      alt={`${tool.name} logo`}
+      className="h-10 w-10 shrink-0 rounded-lg object-contain"
+      onError={() => setFailed(true)}
+    />
+  );
+};
+
 const ToolCard = ({ tool }: { tool: Tool }) => {
   return (
     <div className="group rounded-xl border border-border bg-card p-5 hover-lift flex flex-col">
       <div className="flex items-start gap-3 mb-3">
-        <span className="text-3xl">{tool.logoEmoji}</span>
+        <ToolLogo tool={tool} />
         <div className="flex-1 min-w-0">
           <h3 className="font-heading text-base font-semibold text-card-foreground truncate">
             {tool.name}

@@ -20,7 +20,7 @@ const CategoryCard = ({ category }: { category: Category }) => {
       </p>
       {category.subcategories.length > 0 && (
         <p className="mt-3 text-xs text-accent font-medium">
-          {category.subcategories.length} subcategories →
+          {category.subcategories.length} {category.subcategories.length === 1 ? "subcategory" : "subcategories"} →
         </p>
       )}
     </Link>

@@ -17,9 +17,8 @@ const Navbar = () => {
   return (
     <nav className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <div className="container flex h-16 items-center justify-between">
-        <Link to="/" className="flex items-center gap-2 font-heading text-xl font-bold text-primary">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-accent-foreground text-sm font-bold">AI</span>
-          EverythingAI360
+        <Link to="/" className="font-heading text-xl font-bold tracking-tight text-foreground">
+          Everything<span className="text-accent">AI</span>360
         </Link>
 
         {/* Desktop */}
