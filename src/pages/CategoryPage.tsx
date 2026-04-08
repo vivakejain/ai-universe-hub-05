@@ -1,14 +1,13 @@
-import { useParams } from "react-router-dom";
-import { Link } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { categories } from "@/data/categories";
-import { getToolsByCategory } from "@/data/tools";
+import { useToolsByCategory } from "@/hooks/useTools";
 import ToolCard from "@/components/ToolCard";
 
 const CategoryPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const category = categories.find(c => c.slug === slug);
-  const tools = getToolsByCategory(slug || "");
+  const { data: tools, isLoading } = useToolsByCategory(slug || "");
 
   if (!category) {
     return (
@@ -50,7 +49,13 @@ const CategoryPage = () => {
         </div>
       )}
 
-      {tools.length > 0 ? (
+      {isLoading ? (
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="h-48 rounded-xl bg-muted animate-pulse" />
+          ))}
+        </div>
+      ) : tools && tools.length > 0 ? (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {tools.map(tool => (
             <ToolCard key={tool.id} tool={tool} />

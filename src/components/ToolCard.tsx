@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Star, ExternalLink } from "lucide-react";
-import type { Tool } from "@/data/tools";
+import type { DbTool } from "@/hooks/useTools";
 
 const pricingColors: Record<string, string> = {
   Free: "bg-green-100 text-green-700",
@@ -8,9 +8,9 @@ const pricingColors: Record<string, string> = {
   Paid: "bg-amber-100 text-amber-700",
 };
 
-const ToolLogo = ({ tool }: { tool: Tool }) => {
+const ToolLogo = ({ tool }: { tool: DbTool }) => {
   const [failed, setFailed] = useState(false);
-  if (!tool.logoDomain || failed) {
+  if (!tool.domain || failed) {
     return (
       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground font-heading font-bold text-lg">
         {tool.name.charAt(0)}
@@ -19,7 +19,7 @@ const ToolLogo = ({ tool }: { tool: Tool }) => {
   }
   return (
     <img
-      src={`https://logo.clearbit.com/${tool.logoDomain}`}
+      src={`https://logo.clearbit.com/${tool.domain}`}
       alt={`${tool.name} logo`}
       className="h-10 w-10 shrink-0 rounded-lg object-contain"
       onError={() => setFailed(true)}
@@ -27,7 +27,11 @@ const ToolLogo = ({ tool }: { tool: Tool }) => {
   );
 };
 
-const ToolCard = ({ tool }: { tool: Tool }) => {
+const ToolCard = ({ tool }: { tool: DbTool }) => {
+  const rating = tool.rating || 0;
+  const pricing = tool.pricing || "Free";
+  const bestFor = tool.best_for || "Everyone";
+
   return (
     <div className="group rounded-xl border border-border bg-card p-5 hover-lift flex flex-col">
       <div className="flex items-start gap-3 mb-3">
@@ -46,10 +50,10 @@ const ToolCard = ({ tool }: { tool: Tool }) => {
 
       <div className="flex flex-wrap gap-2 mb-4">
         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
-          {tool.bestFor}
+          {bestFor}
         </span>
-        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${pricingColors[tool.pricing]}`}>
-          {tool.pricing}
+        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${pricingColors[pricing] || pricingColors.Free}`}>
+          {pricing}
         </span>
       </div>
 
@@ -59,19 +63,21 @@ const ToolCard = ({ tool }: { tool: Tool }) => {
             <Star
               key={i}
               size={14}
-              className={i < Math.floor(tool.rating) ? "fill-amber-400 text-amber-400" : "text-border"}
+              className={i < Math.floor(rating) ? "fill-amber-400 text-amber-400" : "text-border"}
             />
           ))}
-          <span className="text-xs text-muted-foreground ml-1">{tool.rating}</span>
+          <span className="text-xs text-muted-foreground ml-1">{rating}</span>
         </div>
-        <a
-          href={tool.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline"
-        >
-          Visit Tool <ExternalLink size={12} />
-        </a>
+        {tool.domain && (
+          <a
+            href={`https://${tool.domain}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline"
+          >
+            Visit Tool <ExternalLink size={12} />
+          </a>
+        )}
       </div>
     </div>
   );
