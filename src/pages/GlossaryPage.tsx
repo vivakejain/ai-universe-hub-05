@@ -1,27 +1,81 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, ChevronDown, ChevronUp, BookOpen, Send, X } from "lucide-react";
+import LoadingSpinner from "@/components/LoadingSpinner";
+import DataErrorBanner from "@/components/DataErrorBanner";
+import { Search, ChevronDown, BookOpen, Send, X, Copy, Sparkles, Shuffle, Lightbulb } from "lucide-react";
 import { toast } from "sonner";
+import { glossaryTerms as builtInGlossaryTerms } from "@/data/glossary";
 
 type GlossaryTerm = {
   id: string;
   term: string;
   definition: string;
-  long_explanation: string | null;
-  examples: string | null;
-  category: string;
+  category: string | null;
+  example?: string | null;
+  examples?: string | null;
+  long_explanation?: string | null;
   related_terms: string[] | null;
 };
 
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 const DIFFICULTIES = ["All", "Beginner", "Intermediate", "Advanced"] as const;
 
+const LEARNING_TRACKS = [
+  {
+    title: "Start Here",
+    level: "Beginner",
+    terms: ["Prompt", "Token", "Hallucination"],
+  },
+  {
+    title: "Builder Track",
+    level: "Intermediate",
+    terms: ["Retrieval-Augmented Generation (RAG)", "Function Calling", "Prompt Injection"],
+  },
+  {
+    title: "Power User",
+    level: "Advanced",
+    terms: ["LoRA", "Mixture of Experts (MoE)", "Reinforcement Learning from Human Feedback (RLHF)"],
+  },
+] as const;
+
 const difficultyColors: Record<string, string> = {
-  beginner: "bg-green-100 text-green-700",
-  intermediate: "bg-blue-100 text-blue-700",
-  advanced: "bg-purple-100 text-purple-700",
+  beginner: "border border-emerald-200 bg-emerald-50 text-emerald-700",
+  intermediate: "border border-sky-200 bg-sky-50 text-sky-700",
+  advanced: "border border-amber-200 bg-amber-50 text-amber-700",
 };
+
+function normalizeDifficulty(raw: string | null | undefined) {
+  return (raw || "beginner").toLowerCase();
+}
+
+function termExample(t: GlossaryTerm) {
+  return t.example?.trim() || t.examples?.trim() || null;
+}
+
+function deriveDetailedExplanation(term: GlossaryTerm) {
+  if (term.long_explanation?.trim()) return term.long_explanation.trim();
+
+  const level = normalizeDifficulty(term.category);
+  const lens =
+    level === "advanced"
+      ? "In advanced workflows,"
+      : level === "intermediate"
+      ? "In practical systems,"
+      : "At a high level,";
+
+  return `${lens} ${term.definition} This concept becomes useful when evaluating real tool behavior, prompts, and model quality in production contexts.`;
+}
+
+function deriveExampleText(term: GlossaryTerm) {
+  const explicit = termExample(term);
+  if (explicit) return explicit;
+  return `Example: In an AI product review, you can use "${term.term}" to explain why a model output quality improved or degraded.`;
+}
+
+function glossaryKey(term: string) {
+  return term.trim().toLowerCase();
+}
 
 const GlossaryPage = () => {
   const [search, setSearch] = useState("");
@@ -29,19 +83,49 @@ const GlossaryPage = () => {
   const [difficultyFilter, setDifficultyFilter] = useState<string>("All");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showSuggest, setShowSuggest] = useState(false);
+  const [spotlightTermId, setSpotlightTermId] = useState<string | null>(null);
 
-  const { data: terms, isLoading } = useQuery({
+  const {
+    data: dbTerms,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
     queryKey: ["glossary"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error: qError } = await supabase
         .from("glossary")
         .select("*")
         .eq("is_approved", true)
         .order("term", { ascending: true });
-      if (error) throw error;
+      if (qError) throw qError;
       return data as GlossaryTerm[];
     },
   });
+
+  const terms = useMemo(() => {
+    const byKey = new Map<string, GlossaryTerm>();
+
+    for (const term of builtInGlossaryTerms) {
+      const key = glossaryKey(term.term);
+      byKey.set(key, {
+        id: `seed-${key.replace(/[^a-z0-9]+/g, "-")}`,
+        term: term.term,
+        definition: term.definition,
+        category: term.category ?? "Beginner",
+        examples: null,
+        long_explanation: null,
+        related_terms: null,
+      });
+    }
+
+    for (const term of dbTerms ?? []) {
+      const key = glossaryKey(term.term);
+      byKey.set(key, term);
+    }
+
+    return Array.from(byKey.values()).sort((a, b) => a.term.localeCompare(b.term));
+  }, [dbTerms]);
 
   const filtered = useMemo(() => {
     if (!terms) return [];
@@ -54,7 +138,7 @@ const GlossaryPage = () => {
         !letterFilter || t.term.charAt(0).toUpperCase() === letterFilter;
       const matchesDifficulty =
         difficultyFilter === "All" ||
-        t.category === difficultyFilter.toLowerCase();
+        normalizeDifficulty(t.category) === difficultyFilter.toLowerCase();
       return matchesSearch && matchesLetter && matchesDifficulty;
     });
   }, [terms, search, letterFilter, difficultyFilter]);
@@ -73,6 +157,60 @@ const GlossaryPage = () => {
     if (!terms) return new Set<string>();
     return new Set(terms.map((t) => t.term.charAt(0).toUpperCase()));
   }, [terms]);
+
+  const termStats = useMemo(() => {
+    const stats = {
+      total: terms.length,
+      beginner: 0,
+      intermediate: 0,
+      advanced: 0,
+    };
+
+    for (const term of terms) {
+      const level = normalizeDifficulty(term.category);
+      if (level === "advanced") stats.advanced += 1;
+      else if (level === "intermediate") stats.intermediate += 1;
+      else stats.beginner += 1;
+    }
+
+    return stats;
+  }, [terms]);
+
+  const resetGlossaryView = () => {
+    setSearch("");
+    setLetterFilter(null);
+    setExpandedId(null);
+  };
+
+  const spotlightTerm = useMemo(
+    () => terms.find((term) => term.id === spotlightTermId) ?? null,
+    [terms, spotlightTermId],
+  );
+
+  const handleTermJump = (rawTerm: string) => {
+    const found = terms.find((t) => glossaryKey(t.term) === glossaryKey(rawTerm));
+    if (!found) return;
+    setSearch(found.term);
+    setLetterFilter(found.term.charAt(0).toUpperCase());
+    setExpandedId(found.id);
+  };
+
+  const chooseRandomSpotlight = () => {
+    if (terms.length === 0) return;
+    const candidates = terms.filter((term) => term.id !== spotlightTermId);
+    const pool = candidates.length > 0 ? candidates : terms;
+    const random = pool[Math.floor(Math.random() * pool.length)];
+    setSpotlightTermId(random.id);
+    setExpandedId(random.id);
+    setLetterFilter(random.term.charAt(0).toUpperCase());
+    setSearch(random.term);
+  };
+
+  useEffect(() => {
+    if (!spotlightTermId && terms.length > 0) {
+      setSpotlightTermId(terms[Math.floor(Math.random() * terms.length)].id);
+    }
+  }, [terms, spotlightTermId]);
 
   return (
     <div className="container py-10">
@@ -120,7 +258,7 @@ const GlossaryPage = () => {
 
         <div className="flex flex-wrap justify-center gap-1">
           <button
-            onClick={() => setLetterFilter(null)}
+            onClick={resetGlossaryView}
             className={`w-8 h-8 rounded text-xs font-bold transition-colors ${
               !letterFilter
                 ? "bg-accent text-accent-foreground"
@@ -151,23 +289,84 @@ const GlossaryPage = () => {
             );
           })}
         </div>
+
+        <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {[
+            { label: "Total", value: termStats.total },
+            { label: "Beginner", value: termStats.beginner },
+            { label: "Intermediate", value: termStats.intermediate },
+            { label: "Advanced", value: termStats.advanced },
+          ].map((item) => (
+            <div key={item.label} className="rounded-xl border border-border bg-card px-3 py-2 text-left">
+              <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{item.label}</p>
+              <p className="font-heading text-lg font-semibold text-foreground">{item.value}</p>
+            </div>
+          ))}
+        </div>
+
+        {spotlightTerm && (
+          <div className="mt-6 rounded-2xl border border-accent/20 bg-gradient-to-r from-accent/10 via-background to-secondary/40 p-4 text-left shadow-sm">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-accent">
+                  <Lightbulb size={12} /> Spotlight Term
+                </p>
+                <h3 className="font-heading mt-1 text-xl font-bold text-foreground">{spotlightTerm.term}</h3>
+                <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{spotlightTerm.definition}</p>
+              </div>
+              <button
+                type="button"
+                onClick={chooseRandomSpotlight}
+                className="inline-flex items-center gap-1 rounded-lg border border-accent/30 bg-background/80 px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-accent/10"
+              >
+                <Shuffle size={13} /> Surprise me
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={() => handleTermJump(spotlightTerm.term)}
+              className="mt-3 rounded-md bg-accent px-3 py-1.5 text-xs font-semibold text-accent-foreground transition-colors hover:bg-accent/90"
+            >
+              Open this term
+            </button>
+          </div>
+        )}
+
+        <div className="mt-6 grid gap-2 text-left sm:grid-cols-3">
+          {LEARNING_TRACKS.map((track) => (
+            <div key={track.title} className="rounded-xl border border-border bg-card p-3">
+              <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{track.level}</p>
+              <h4 className="font-heading text-base font-semibold text-card-foreground">{track.title}</h4>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {track.terms.map((term) => (
+                  <button
+                    key={term}
+                    type="button"
+                    onClick={() => handleTermJump(term)}
+                    className="rounded-full bg-secondary px-2.5 py-1 text-xs font-medium text-secondary-foreground transition-colors hover:bg-accent/20"
+                  >
+                    {term}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
-      {terms && (
+      {terms && !isError && (
         <p className="text-sm text-muted-foreground mb-6 text-center">
           Showing {filtered.length} of {terms.length} terms
         </p>
       )}
 
-      {isLoading && (
-        <div className="space-y-3">
-          {Array.from({ length: 10 }).map((_, i) => (
-            <div key={i} className="h-16 rounded-xl bg-muted animate-pulse" />
-          ))}
-        </div>
+      {isError && (
+        <DataErrorBanner message={error instanceof Error ? error.message : undefined} />
       )}
 
-      {!isLoading && (
+      {isLoading && <LoadingSpinner />}
+
+      {!isLoading && !isError && (
         <div className="space-y-8">
           {Object.keys(grouped)
             .sort()
@@ -183,19 +382,22 @@ const GlossaryPage = () => {
                       term={term}
                       expanded={expandedId === term.id}
                       onToggle={() => setExpandedId(expandedId === term.id ? null : term.id)}
+                      onRelatedClick={(value) => {
+                        setSearch(value);
+                        setLetterFilter(value.charAt(0).toUpperCase());
+                      }}
                     />
                   ))}
                 </div>
               </div>
             ))}
 
-          {filtered.length === 0 && !isLoading && (
+          {filtered.length === 0 && (
             <div className="text-center py-16 text-muted-foreground">
               <p className="text-lg mb-2">No terms found.</p>
               <button
                 onClick={() => {
-                  setSearch("");
-                  setLetterFilter(null);
+                  resetGlossaryView();
                   setDifficultyFilter("All");
                 }}
                 className="text-accent hover:underline"
@@ -216,60 +418,89 @@ const TermCard = ({
   term,
   expanded,
   onToggle,
+  onRelatedClick,
 }: {
   term: GlossaryTerm;
   expanded: boolean;
   onToggle: () => void;
+  onRelatedClick: (value: string) => void;
 }) => {
+  const level = normalizeDifficulty(term.category);
+  const levelLabel = level.charAt(0).toUpperCase() + level.slice(1);
+  const detailedExplanation = deriveDetailedExplanation(term);
+  const exampleText = deriveExampleText(term);
+
   return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden transition-all">
+    <div className="overflow-hidden rounded-xl border border-border/80 bg-card transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-[1px] hover:border-accent/30 hover:shadow-[0_8px_22px_rgba(11,40,64,0.08)]">
       <button
         onClick={onToggle}
-        className="w-full flex items-center justify-between p-4 text-left hover:bg-secondary/30 transition-colors"
+        className="group w-full bg-card px-4 py-4 text-left transition-colors hover:bg-accent/5 focus-visible:bg-accent/10"
       >
-        <div className="flex items-center gap-3 flex-1 min-w-0">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
           <h3 className="font-heading font-semibold text-card-foreground">{term.term}</h3>
-          <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${difficultyColors[term.category] || ""}`}>
-            {term.category.charAt(0).toUpperCase() + term.category.slice(1)}
+          <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${difficultyColors[level] || "border border-border bg-secondary text-secondary-foreground"}`}>
+            {levelLabel}
           </span>
         </div>
-        {expanded ? (
-          <ChevronUp size={18} className="shrink-0 text-muted-foreground" />
-        ) : (
-          <ChevronDown size={18} className="shrink-0 text-muted-foreground" />
-        )}
+        <ChevronDown
+          size={18}
+          className={`shrink-0 text-muted-foreground transition-transform duration-200 ${expanded ? "rotate-180" : "rotate-0"}`}
+        />
       </button>
 
       {!expanded && (
-        <p className="px-4 pb-4 -mt-1 text-sm text-muted-foreground line-clamp-1">{term.definition}</p>
+        <p className="px-4 pb-4 text-sm text-muted-foreground/90 line-clamp-1">{term.definition}</p>
       )}
 
       {expanded && (
-        <div className="px-4 pb-5 space-y-3 border-t border-border pt-4">
-          <p className="text-sm text-foreground font-medium">{term.definition}</p>
+        <div className="animate-in fade-in-0 slide-in-from-top-1 space-y-3 border-t border-border/80 px-4 pb-5 pt-4 duration-200">
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-background/70 px-3 py-2">
+            <p className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+              <Sparkles size={12} /> Quick context ready for practical use
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                const payload = `${term.term}\n\nDefinition: ${term.definition}\n\nMore detail: ${detailedExplanation}`;
+                navigator.clipboard.writeText(payload).then(
+                  () => toast.success(`Copied ${term.term} notes.`),
+                  () => toast.error("Could not copy notes."),
+                );
+              }}
+              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs font-medium text-foreground transition-colors hover:bg-secondary/80"
+            >
+              <Copy size={12} /> Copy
+            </button>
+          </div>
 
-          {term.long_explanation && (
-            <div>
-              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Detailed Explanation</h4>
-              <p className="text-sm text-muted-foreground leading-relaxed">{term.long_explanation}</p>
-            </div>
-          )}
+          <div>
+            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Definition</h4>
+            <p className="text-sm text-foreground leading-relaxed">{term.definition}</p>
+          </div>
 
-          {term.examples && (
-            <div>
-              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Examples</h4>
-              <p className="text-sm text-muted-foreground">{term.examples}</p>
-            </div>
-          )}
+          <div>
+            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Example</h4>
+            <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{exampleText}</p>
+          </div>
+
+          <div>
+            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">More detail</h4>
+            <p className="text-sm text-muted-foreground leading-relaxed">{detailedExplanation}</p>
+          </div>
 
           {term.related_terms && term.related_terms.length > 0 && (
             <div>
               <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Related Terms</h4>
               <div className="flex flex-wrap gap-1.5">
                 {term.related_terms.map((rt) => (
-                  <span key={rt} className="px-2.5 py-1 rounded-full text-xs bg-secondary text-secondary-foreground font-medium">
+                  <button
+                    key={rt}
+                    type="button"
+                    onClick={() => onRelatedClick(rt)}
+                    className="rounded-full bg-secondary px-2.5 py-1 text-xs font-medium text-secondary-foreground transition-colors hover:bg-accent/20"
+                  >
                     {rt}
-                  </span>
+                  </button>
                 ))}
               </div>
             </div>
